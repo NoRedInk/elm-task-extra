@@ -1,4 +1,4 @@
-module Task.Extra exposing (..)
+module Task.Extra exposing (optional, parallel, delay, loop, performFailproof)
 {-| Contains a list of convenient functions that cover common use cases
 for tasks.
 
@@ -10,6 +10,9 @@ for tasks.
 
 # Looping forever
 @docs loop
+
+# Commands
+@docs performFailproof
 -}
 
 import Task    exposing (Task, fail, succeed, sequence, andThen, onError)
@@ -58,3 +61,26 @@ delay : Time -> Task error value -> Task error value
 delay time task =
   sleep time
     `andThen` \_ -> task
+
+{-| Command the runtime system to perform a task that is guaranteed to
+not fail. The most important argument is the
+[`Task`](http://package.elm-lang.org/packages/elm-lang/core/latest/Task#Task)
+which describes what you want to happen. But you also need to provide
+a function to tag the success outcome, so as to have a message to feed
+back into your application. Unlike with the standard
+[`perform`](http://package.elm-lang.org/packages/elm-lang/core/latest/Task#perform),
+you need not provide a function to tag a failing outcome, because the
+[`Never`](http://package.elm-lang.org/packages/elm-lang/core/latest/Basics#Never)
+in the type `Task Never a` expresses that no possibly failing task is
+allowed in that place anyway.
+
+A typical use of the function is `Date.now |> performFailproof CurrentDate`.
+-}
+performFailproof : (a -> msg) -> Task Never a -> Cmd msg
+performFailproof =
+    Task.perform never
+
+-- from http://package.elm-lang.org/packages/elm-community/basics-extra:
+never : Never -> a
+never n =
+    never n
